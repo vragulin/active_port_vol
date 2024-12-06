@@ -7,7 +7,7 @@ import pandas as pd
 import pickle
 from pathlib import Path
 
-DATA_DIR = r"C:\Users\vragu\OneDrive\Desktop\Proj\ElmStudies\active_port_vol\data"
+DATA_DIR = r"/data"
 BASKET = 'b500_basket_20231106.csv'
 INDEX_HIST = 'idx_long_rets_20231106_vals.csv'
 RETURNS_DATA = 'returns_20231106.pickle'

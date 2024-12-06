@@ -1,12 +1,10 @@
 """ Generate historical covariance matrix from weekly data
 	to be used for calculating portfolio risk
 """
-import pandas as pd
 import pickle
-import gen_stock_portfolios as gsp
 from pathlib import Path
 
-DATA_DIR = r'/data_5y'
+DATA_DIR = r'../data_5y'
 BASKET = 'b500_basket_20231106.csv'
 INDEX_HIST = 'idx_long_rets_20231106_vals.csv'
 RETURNS_DATA = 'returns_20231106.pickle'
