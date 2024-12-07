@@ -14,7 +14,7 @@ import codetiming
 from typing import Tuple
 from src.excess_vol_w_median import gen_sim_ports
 from src.hist_returns.utility import Utility
-from src.hist_returns.sim_one_port import gen_port_rets, calc_port_path_stats
+from src.hist_returns.sim_one_port import gen_port_rets  #. calc_port_path_stats
 from src.hist_returns.cert_equiv_ret import an_port_set, load_data, adj_returns_to_target
 
 DATA_DIR = r"../../data_5y"
@@ -23,6 +23,8 @@ INDEX_HIST = 'idx_rets_20231106_vals.csv'
 RETURNS_DATA = 'returns_20231106.pickle'
 DAILY, WEEKLY = range(2)
 SIM_FREQ = WEEKLY
+RISK_FREE = 0.03
+RISK_ALLOC = 0.6
 
 # Portfolios
 REGENERATE_PORTS = True
@@ -31,7 +33,7 @@ RNG = np.random.default_rng(123)
 
 N_PORTS = 10000
 STOCKS_IN_PORT_LIST = [5, 25, 100]
-N_PATHS = 500
+N_PATHS = 1000
 CRRA_LIST = [0, 1, 2, 5, 10]
 
 TARGET_RET = 0.1138  # Annual return over the period
@@ -103,7 +105,7 @@ class Simulation:
         for j, port in enumerate(ports_full_norm):
             port_rets = gen_port_rets(stock_rets, port, self.sim_index)
             for i, util in enumerate(utils):
-                port_stats = calc_port_path_stats(port_rets, util)
+                port_stats = self.calc_port_path_stats(port_rets, util, alloc=RISK_ALLOC, risk_free=RISK_FREE)
                 if i == 0:
                     res['port_exp_rets'][j] = port_stats['exp_ret']
                     res['port_stds'][j] = port_stats['w_std']
@@ -111,13 +113,42 @@ class Simulation:
 
         idx_ret_paths = gen_port_rets(stock_rets, idx_weights, self.sim_index)
         for i, util in enumerate(utils):
-            idx_stats = calc_port_path_stats(idx_ret_paths, util)
+            idx_stats = self.calc_port_path_stats(idx_ret_paths, util, alloc=RISK_ALLOC, risk_free=RISK_FREE)
             if i == 0:
                 res['idx_exp_ret'] = idx_stats['exp_ret']
                 res['idx_std'] = idx_stats['w_std']
             res['idx_ce_ret'][i] = idx_stats['exp_ret_ce']
 
         return res
+
+    def calc_port_path_stats(self, port_ret_paths: np.ndarray, util: Utility, alloc: float = 1,
+                             risk_free: float = 0) -> dict:
+        """ Calculate summary statistics for a single portfolio simulation paths
+            :param port_ret_paths: numpy array of portfolio returns for different simulation paths
+            :param util: Utility object to calculate certainty-equivalent return, or None
+            :param alloc: allocation to the risky asset
+            :param risk_free: risk-free rate
+            :return: dictionary with summary statistics including mean, standard deviation, and certainty-equivalent return
+        """
+
+        # Calculate statistics
+        full_ret_paths = alloc * port_ret_paths + (1 - alloc) * risk_free / self.n_steps
+        final_vals = np.prod(1 + full_ret_paths, axis=0)
+        exp_ret = np.mean(final_vals) - 1
+        exp_lret = np.mean(np.log(final_vals))
+        if util is not None:
+            final_vals_ce = util.ce_wealth(final_vals)
+            exp_ret_ce = final_vals_ce - 1
+        else:
+            final_vals_ce = exp_ret_ce = None
+
+        return {'w_mean': np.mean(final_vals),
+                'w_std': np.std(np.log(final_vals)),
+                'w_ce': final_vals_ce,
+                'exp_ret': exp_ret,
+                'exp_lret': exp_lret,
+                'exp_ret_ce': exp_ret_ce
+                }
 
 
 def main():
