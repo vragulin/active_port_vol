@@ -35,7 +35,7 @@ def sim_idx():
     ])
 
 
-def test_gen_port_rets(stock_rets, weights, sim_idx):
+def test_gen_port_rets_const_weights(stock_rets, weights, sim_idx):
     port_rets = gen_port_rets(stock_rets, weights, sim_idx)
     expected = np.array([
         [-0.01, 0.105, 0.105, 0.04],
@@ -43,6 +43,18 @@ def test_gen_port_rets(stock_rets, weights, sim_idx):
         [0.01, -0.01, -0.028, -0.028],
         [0.04, 0.01, -0.01, -0.01],
         [-0.01, 0.04, -0.028, 0.105]
+    ])
+    np.testing.assert_array_almost_equal(port_rets, expected)
+
+
+def test_gen_port_rets_const_shares(stock_rets, weights, sim_idx):
+    port_rets = gen_port_rets(stock_rets, weights, sim_idx, const_weights=False)
+    expected = np.array([
+        [-0.01, 0.105, 0.105, 0.04],
+        [0.03030303, 0.007692308, 0.001809955, 0.003846154],
+        [0, -0.002873821, -0.030108401, -0.031609195],
+        [0.054117647, 0.008889489, 0.013071055, -0.023976261],
+        [-0.020089286, 0.005811618, -0.029225194, 0.101897118]
     ])
     np.testing.assert_array_almost_equal(port_rets, expected)
 

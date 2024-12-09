@@ -7,20 +7,29 @@ import sys
 from src.hist_returns.utility import Utility
 
 
-def gen_port_rets(stock_rets: np.ndarray, weights: np.ndarray, sim_idx: np.ndarray) -> np.ndarray:
+def gen_port_rets(stock_rets: np.ndarray, weights: np.ndarray, sim_idx: np.ndarray,
+                  const_weights: bool = True) -> np.ndarray:
     """
     Simulate a single portfolio
     :param stock_rets: txn array of period returns for each stock
     :param weights: stock weights - nx1 vector, assume we rebalance at the end of each period
     :param sim_idx: txs array of dates indices to use for each simulation
+    :param const_weights: whether to use constant weights or constant shares
     :return: dictionary with portfolio returns and statistics
     """
 
     # Calculate portfolio returns on consecutive dates
-    port_rets_actual = stock_rets @ weights
-
-    # Generate portfoolio returns across different paths
-    port_rets_paths = port_rets_actual[sim_idx]
+    if const_weights:
+        port_rets_actual = stock_rets @ weights
+        port_rets_paths = port_rets_actual[sim_idx]
+    else:
+        port_rets_paths = np.zeros(sim_idx.shape)
+        for i in range(sim_idx.shape[1]):
+            stock_rets_one_path = stock_rets[sim_idx[:, i], :]
+            cum_stock_rets_one_path = np.cumprod(1 + stock_rets_one_path, axis=0)
+            cum_port_rets_one_path = cum_stock_rets_one_path @ weights[:, None]
+            port_rets_paths[1:, i] = np.squeeze(cum_port_rets_one_path[1:] / cum_port_rets_one_path[:-1] - 1)
+            port_rets_paths[0, i] = cum_port_rets_one_path[0] - 1
 
     return port_rets_paths
 
